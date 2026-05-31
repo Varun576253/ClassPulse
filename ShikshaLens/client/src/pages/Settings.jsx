@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 
 const LANGUAGES = ['English', 'Hindi', 'Telugu', 'Marathi', 'Tamil'];
+const THEMES = [
+  { id: 'dark', name: 'Dark', bg: '#0f1117', card: '#1a1d23', text: 'white', accent: '#22c55e' },
+  { id: 'light', name: 'Light', bg: '#f8fafc', card: 'white', text: '#1e293b', accent: '#1e40af' },
+  { id: 'midnight', name: 'Midnight Blue', bg: '#0f172a', card: '#1e293b', text: 'white', accent: '#6366f1' }
+];
 
 const emptyProfile = {
   name: '',
@@ -43,7 +48,7 @@ const Settings = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [codeSent, setCodeSent] = useState(false);
-  const [themePreference, setThemePreference] = useState(localStorage.getItem('classpulse-theme') || 'dark');
+  const [themePreference, setThemePreference] = useState(localStorage.getItem('shikshalens-theme') || localStorage.getItem('classpulse-theme') || 'dark');
 
   useEffect(() => {
     if (!teacherId) return undefined;
@@ -169,8 +174,11 @@ const Settings = () => {
     }
   };
 
-  const saveTheme = () => {
-    localStorage.setItem('classpulse-theme', themePreference);
+  const saveTheme = (theme) => {
+    setThemePreference(theme);
+    localStorage.setItem('shikshalens-theme', theme);
+    localStorage.setItem('classpulse-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
     setSuccess('Theme preference saved.');
     window.setTimeout(() => setSuccess(''), 3500);
   };
@@ -353,30 +361,29 @@ const Settings = () => {
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-[#11233f]">Current theme</p>
-                <p className="mt-1 text-sm text-slate-500">Dark theme is active for this workspace.</p>
-              </div>
-              <span className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-black uppercase text-emerald-700">
-                Active
-              </span>
+          <div className="mt-4">
+            <p className="mb-3 text-xs font-black uppercase tracking-wider text-slate-400">Appearance</p>
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              {THEMES.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => saveTheme(theme.id)}
+                  className={`rounded-xl border p-3 text-left transition hover:border-blue-200 ${themePreference === theme.id ? 'border-blue-300 bg-blue-50' : 'border-slate-200 bg-white'}`}
+                >
+                  <div className="mb-3 flex h-12 overflow-hidden rounded-lg border border-slate-200">
+                    <span className="flex-1" style={{ background: theme.bg }} />
+                    <span className="flex-1" style={{ background: theme.card }} />
+                    <span className="flex-1" style={{ background: theme.accent }} />
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black text-[#11233f]">{theme.name}</span>
+                    {themePreference === theme.id && <CheckCircle2 size={16} className="text-emerald-600" />}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">Accent {theme.accent}</p>
+                </button>
+              ))}
             </div>
-            <label className="mt-4 grid gap-1.5 text-sm font-bold text-slate-600">
-              Preference
-              <select className="field" value={themePreference} onChange={(event) => setThemePreference(event.target.value)}>
-                <option value="dark">Dark theme</option>
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={saveTheme}
-              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600 hover:bg-slate-50"
-            >
-              <Palette size={15} />
-              Save theme
-            </button>
           </div>
         </section>
       </section>

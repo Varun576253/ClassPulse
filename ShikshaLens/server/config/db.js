@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   status TEXT NOT NULL DEFAULT 'pending',
   quiz_url TEXT,
   qr_code TEXT,
+  deadline TIMESTAMPTZ,
+  closed_at TIMESTAMPTZ,
   questions JSONB NOT NULL DEFAULT '[]'::jsonb,
   responses JSONB NOT NULL DEFAULT '[]'::jsonb
 );
@@ -267,12 +269,14 @@ ALTER TABLE sessions ADD COLUMN IF NOT EXISTS grouped_students JSONB NOT NULL DE
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS class_insight JSONB NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS quiz_url TEXT;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS qr_code TEXT;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS deadline TIMESTAMPTZ;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS closed_at TIMESTAMPTZ;
 ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_delivery_mode_check;
 ALTER TABLE messages ADD CONSTRAINT messages_delivery_mode_check CHECK (delivery_mode IN ('greenapi', 'twilio', 'mock', 'system'));
 ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_type_check;
 ALTER TABLE messages ADD CONSTRAINT messages_type_check CHECK (type IN ('question', 'feedback', 'reply', 'acknowledgement'));
 ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_status_check;
-ALTER TABLE messages ADD CONSTRAINT messages_status_check CHECK (status IN ('sent', 'failed', 'received', 'pending'));
+ALTER TABLE messages ADD CONSTRAINT messages_status_check CHECK (status IN ('sent', 'saved', 'delivered', 'failed', 'received', 'pending'));
 `;
 
 const indexes = `

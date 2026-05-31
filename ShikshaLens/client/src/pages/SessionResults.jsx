@@ -1,4 +1,4 @@
-import { BarChart3, CheckCircle2, Loader2, MessageSquareHeart, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
+import { BarChart3, CheckCircle2, Clock, Download, Loader2, MessageSquareHeart, RefreshCw, Wifi, WifiOff, X, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api from '../api/axios';
@@ -10,7 +10,8 @@ import { addNotification } from '../utils/notifications';
 const statusBadge = {
   active: 'bg-blue-100 text-blue-700 border-blue-200',
   pending: 'bg-slate-100 text-slate-600 border-slate-200',
-  completed: 'bg-emerald-100 text-emerald-700 border-emerald-200'
+  completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  closed: 'bg-slate-100 text-slate-600 border-slate-200'
 };
 
 const eventSourceUrl = (path) => {
@@ -37,6 +38,13 @@ const SessionResults = () => {
   const [loading, setLoading] = useState(true);
   const [analysing, setAnalysing] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
+  const [closingSession, setClosingSession] = useState(false);
+  const [settingDeadline, setSettingDeadline] = useState(false);
+  const [deadlineOpen, setDeadlineOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [filterText, setFilterText] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [now, setNow] = useState(Date.now());
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [sseConnected, setSseConnected] = useState(false);
@@ -121,6 +129,24 @@ const SessionResults = () => {
       } catch (_) {}
     });
 
+    evtSource.addEventListener('session_closed', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.session) setSession(data.session);
+        showToast('Session closed.');
+      } catch (_) {
+        showToast('Session closed.');
+      }
+    });
+
+    evtSource.addEventListener('deadline_set', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.session) setSession(data.session);
+        showToast('Deadline set.');
+      } catch (_) {}
+    });
+
     evtSource.onerror = () => setSseConnected(false);
 
     return () => {
@@ -136,6 +162,12 @@ const SessionResults = () => {
     return () => window.clearInterval(timer);
   }, [loadSession, session?.status, sseConnected]);
 
+  useEffect(() => {
+    if (!session?.deadline || session.status !== 'active') return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [session?.deadline, session?.status]);
+
   const analyze = async () => {
     try {
       setAnalysing(true);
@@ -143,7 +175,7 @@ const SessionResults = () => {
       setNotice('');
       const response = await api.post(`/sessions/${sessionId}/analyze`);
       setSession(response.data.session);
-      setNotice('Analysis complete. Personalised feedback sent to students.');
+      setNotice('Analysis complete. Personalised feedback saved for students.');
       addNotification({
         type: 'session_completed',
         title: 'New assessment completed',
@@ -164,12 +196,49 @@ const SessionResults = () => {
       setFeedbackSending(true);
       setError('');
       const response = await api.post(`/sessions/${sessionId}/feedback`);
-      setNotice(`Feedback sent to ${response.data.sent} students.`);
+      const count = response.data.saved ?? response.data.sent ?? 0;
+      setNotice(`Feedback saved for ${count} students.`);
+      showToast(`Feedback saved for ${count} students`);
       await loadSession();
     } catch (err) {
       setError(err.message);
+      showToast(err.message);
     } finally {
       setFeedbackSending(false);
+    }
+  };
+
+  const closeSession = async () => {
+    if (!window.confirm("Close session? Students won't be able to submit after this.")) return;
+    try {
+      setClosingSession(true);
+      setError('');
+      const response = await api.post(`/sessions/${sessionId}/close`);
+      setSession(response.data.session);
+      showToast('Session closed.');
+    } catch (err) {
+      setError(err.message);
+      showToast(err.message);
+    } finally {
+      setClosingSession(false);
+    }
+  };
+
+  const setDeadline = async (minutes) => {
+    const custom = minutes === 'custom' ? Number(window.prompt('Close after how many minutes? 1-60')) : minutes;
+    if (!custom) return;
+    try {
+      setSettingDeadline(true);
+      setError('');
+      const response = await api.post(`/sessions/${sessionId}/deadline`, { minutes: custom });
+      setSession(response.data.session);
+      setDeadlineOpen(false);
+      showToast(`Deadline set for ${custom} minutes.`);
+    } catch (err) {
+      setError(err.message);
+      showToast(err.message);
+    } finally {
+      setSettingDeadline(false);
     }
   };
 
@@ -195,10 +264,156 @@ const SessionResults = () => {
   const responseCount = session.responses?.length || 0;
   const totalStudents = students.length;
   const pendingCount = totalStudents ? Math.max(totalStudents - responseCount, 0) : 0;
+  const deadlineMs = session.deadline ? new Date(session.deadline).getTime() - now : null;
+  const deadlineLabel = deadlineMs !== null && deadlineMs > 0
+    ? `${Math.floor(deadlineMs / 60000)}:${String(Math.floor((deadlineMs % 60000) / 1000)).padStart(2, '0')}`
+    : '';
+  const exportRows = (session.responses || []).map((response) => {
+    const student = response.studentId || {};
+    const score = Number(response.score || 0);
+    const understood = response.understood === 'yes' ? 'Understood' : response.understood === 'partial' ? 'Partial' : 'Struggling';
+    return {
+      name: student.name || response.studentName || 'Student',
+      mobile: student.phone || response.studentMobile || '',
+      score,
+      percent: `${score}%`,
+      status: understood,
+      submittedAt: response.submittedAt ? new Date(response.submittedAt).toLocaleString() : ''
+    };
+  });
+  const filteredRows = exportRows
+    .filter((row) => `${row.name} ${row.mobile} ${row.status}`.toLowerCase().includes(filterText.toLowerCase()))
+    .sort((a, b) => {
+      const av = a[sortConfig.key];
+      const bv = b[sortConfig.key];
+      const result = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
+      return sortConfig.direction === 'asc' ? result : -result;
+    });
+  const classAvg = exportRows.length ? Math.round(exportRows.reduce((sum, row) => sum + row.score, 0) / exportRows.length) : 0;
+  const highest = exportRows.length ? Math.max(...exportRows.map((row) => row.score)) : 0;
+  const lowest = exportRows.length ? Math.min(...exportRows.map((row) => row.score)) : 0;
+  const summaryCounts = {
+    understood: exportRows.filter((row) => row.status === 'Understood').length,
+    partial: exportRows.filter((row) => row.status === 'Partial').length,
+    struggling: exportRows.filter((row) => row.status === 'Struggling').length
+  };
+  const sortBy = (key) => setSortConfig((curr) => ({
+    key,
+    direction: curr.key === key && curr.direction === 'asc' ? 'desc' : 'asc'
+  }));
+  const csvEscape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+  const exportData = () => {
+    const headers = ['Student Name', 'Mobile', 'Score', '%', 'Status', 'Submitted At'];
+    const rows = filteredRows.map((row) => [row.name, row.mobile, row.score, row.percent, row.status, row.submittedAt]);
+    const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${String(session.topic || 'session').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}-results.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const copyTable = async () => {
+    const headers = ['Student Name', 'Mobile', 'Score', '%', 'Status', 'Submitted At'];
+    const rows = filteredRows.map((row) => [row.name, row.mobile, row.score, row.percent, row.status, row.submittedAt]);
+    await navigator.clipboard.writeText([headers, ...rows].map((row) => row.join('\t')).join('\n'));
+    showToast('Table copied.');
+  };
 
   return (
     <div className="space-y-5">
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+      {exportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">Export Data</p>
+                <h2 className="text-xl font-black text-[#11233f]">Student Results - {session.topic}</h2>
+              </div>
+              <button type="button" onClick={() => setExportOpen(false)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" title="Close">
+                <X size={16} />
+              </button>
+            </div>
+
+            <section className="mb-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {[
+                ['Total students', totalStudents || exportRows.length],
+                ['Submitted', `${responseCount} / ${totalStudents || exportRows.length}`],
+                ['Understood', summaryCounts.understood],
+                ['Partial', summaryCounts.partial],
+                ['Struggling', summaryCounts.struggling],
+                ['Class avg', `${classAvg}%`],
+                ['Highest score', `${highest}%`],
+                ['Lowest score', `${lowest}%`]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-lg font-black text-[#11233f]">{value}</p>
+                  <p className="text-xs font-semibold text-slate-500">{label}</p>
+                </div>
+              ))}
+            </section>
+
+            <input
+              className="field mb-4"
+              value={filterText}
+              onChange={(event) => setFilterText(event.target.value)}
+              placeholder="Filter students..."
+            />
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-100 text-xs uppercase text-slate-500">
+                  <tr>
+                    {[
+                      ['name', 'Student Name'],
+                      ['mobile', 'Mobile'],
+                      ['score', 'Score'],
+                      ['score', '%'],
+                      ['status', 'Status'],
+                      ['submittedAt', 'Submitted At']
+                    ].map(([key, label]) => (
+                      <th key={label} className="cursor-pointer px-3 py-2 font-black" onClick={() => sortBy(key)}>{label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.map((row) => (
+                    <tr key={`${row.name}-${row.submittedAt}`} className={`border-t border-slate-200 ${
+                      row.status === 'Understood' ? 'bg-emerald-50' : row.status === 'Partial' ? 'bg-amber-50' : 'bg-rose-50'
+                    }`}>
+                      <td className="px-3 py-2 font-bold text-[#11233f]">{row.name}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.mobile}</td>
+                      <td className="px-3 py-2 font-bold text-slate-700">{row.score}</td>
+                      <td className="px-3 py-2 font-bold text-slate-700">{row.percent}</td>
+                      <td className="px-3 py-2 font-bold text-slate-700">{row.status}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.submittedAt}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-slate-200 bg-white">
+                    <td colSpan="6" className="px-3 py-3 text-sm font-black text-[#11233f]">
+                      {filteredRows.length} students | Class avg: {classAvg}%
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={exportData} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700">
+                <Download size={15} />
+                Download CSV
+              </button>
+              <button type="button" onClick={copyTable} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                Copy Table
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
@@ -219,6 +434,12 @@ const SessionResults = () => {
                 {sseConnected ? 'Live' : 'Polling'}
               </span>
             )}
+            {session.status === 'active' && deadlineLabel && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-700">
+                <Clock size={11} />
+                Closes in: {deadlineLabel}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-slate-400">
             {session.teacherId?.name} / {session.grade} / {session.subject} / {session.language}
@@ -234,6 +455,50 @@ const SessionResults = () => {
           >
             <RefreshCw size={15} />
           </button>
+          <button
+            type="button"
+            onClick={() => setExportOpen(true)}
+            className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+          >
+            <Download size={15} />
+            Export Data
+          </button>
+          {session.status === 'active' && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setDeadlineOpen((open) => !open)}
+                disabled={settingDeadline}
+                className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-bold text-white transition hover:bg-amber-600 disabled:opacity-50"
+              >
+                {settingDeadline ? <Loader2 size={15} className="animate-spin" /> : <Clock size={15} />}
+                Set Deadline
+              </button>
+              {deadlineOpen && (
+                <div className="absolute right-0 top-11 z-20 grid min-w-36 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                  {[5, 10, 15, 30].map((minutes) => (
+                    <button key={minutes} type="button" onClick={() => setDeadline(minutes)} className="rounded-lg px-3 py-2 text-left text-sm font-bold text-slate-600 hover:bg-slate-50">
+                      {minutes} min
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => setDeadline('custom')} className="rounded-lg px-3 py-2 text-left text-sm font-bold text-slate-600 hover:bg-slate-50">
+                    Custom
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          {session.status === 'active' && (
+            <button
+              type="button"
+              onClick={closeSession}
+              disabled={closingSession}
+              className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-50"
+            >
+              {closingSession ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
+              Close Session
+            </button>
+          )}
           <button
             type="button"
             onClick={analyze}
@@ -313,6 +578,11 @@ const SessionResults = () => {
               {totalStudents ? `${pendingCount} pending` : 'Session active'}
             </span>
           </div>
+        </section>
+      )}
+      {session.status === 'closed' && (
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-semibold text-slate-600">Session closed. No more responses accepted.</p>
         </section>
       )}
 

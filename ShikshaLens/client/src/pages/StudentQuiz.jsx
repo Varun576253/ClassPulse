@@ -21,6 +21,7 @@ const StudentQuiz = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [ended, setEnded] = useState(false);
 
   const currentQuestion = questions[currentIndex];
   const currentQuestionId = useMemo(
@@ -90,8 +91,8 @@ const StudentQuiz = () => {
     setError('');
   };
 
-  const submitQuiz = async () => {
-    if (!requireCurrentAnswer()) return;
+  const submitQuiz = async (force = false) => {
+    if (!force && !requireCurrentAnswer()) return;
 
     try {
       setSubmitting(true);
@@ -117,9 +118,21 @@ const StudentQuiz = () => {
 
   useEffect(() => {
     if (step === 'questions' && session?.status && (session.status !== 'active' || session.formStatus === 'closed')) {
+      setEnded(true);
       setError('This session is not active. Ask your teacher.');
     }
   }, [session, step]);
+
+  useEffect(() => {
+    if (step !== 'questions' || !session?.deadline || submitting || result) return undefined;
+    const timer = window.setInterval(() => {
+      if (Date.now() > new Date(session.deadline).getTime()) {
+        setEnded(true);
+        submitQuiz(true);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [answers, result, session?.deadline, step, submitting]);
 
   if (step === 'success') {
     return (
@@ -158,6 +171,11 @@ const StudentQuiz = () => {
             </p>
           ) : (
             <>
+              {ended && (
+                <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+                  This session has ended. Please submit your answers.
+                </p>
+              )}
               <div className="mb-5">
                 <p className="text-xs font-black uppercase tracking-wider text-blue-600">
                   Question {currentIndex + 1} of {questions.length}

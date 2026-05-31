@@ -20,10 +20,17 @@ const statusColor = {
 };
 
 const savedTeacherId = () => localStorage.getItem('classpulse-teacher') || '';
+const savedTeacherProfile = () => {
+  try {
+    return JSON.parse(localStorage.getItem('classpulse-teacher-profile') || '{}');
+  } catch {
+    return {};
+  }
+};
 
 const Dashboard = () => {
-  const [teachers, setTeachers] = useState([]);
-  const [teacherId, setTeacherId] = useState('');
+  const [selectedTeacher, setSelectedTeacher] = useState(savedTeacherProfile());
+  const [teacherId, setTeacherId] = useState(savedTeacherId());
   const [dashboard, setDashboard] = useState({});
   const [riskStudents, setRiskStudents] = useState([]);
   const [misconceptions, setMisconceptions] = useState([]);
@@ -32,24 +39,29 @@ const Dashboard = () => {
   const [lastUpdated, setLastUpdated] = useState('');
 
   useEffect(() => {
-    const loadTeachers = async () => {
+    const loadTeacher = async () => {
+      const storedId = savedTeacherId();
+      const storedProfile = savedTeacherProfile();
+      setTeacherId(storedId);
+      setSelectedTeacher(storedProfile);
+
+      if (!storedId) {
+        setLoading(false);
+        setError('Please sign in to view your dashboard.');
+        return;
+      }
+
       try {
-        const response = await api.get('/teachers');
-        const teacherList = response.data.teachers || [];
-        const savedId = savedTeacherId();
-        const nextId = teacherList.some((t) => t._id === savedId)
-          ? savedId
-          : teacherList[0]?._id || '';
-        setTeachers(teacherList);
-        setTeacherId(nextId);
-        if (nextId) localStorage.setItem('classpulse-teacher', nextId);
-        else localStorage.removeItem('classpulse-teacher');
+        const response = await api.get(`/teachers/${storedId}`);
+        const teacher = response.data.teacher || storedProfile;
+        setSelectedTeacher(teacher);
+        localStorage.setItem('classpulse-teacher-profile', JSON.stringify(teacher));
       } catch (err) {
         setError(err.message);
         setLoading(false);
       }
     };
-    loadTeachers();
+    loadTeacher();
   }, []);
 
   const loadDashboard = useCallback(async ({ background = false } = {}) => {
@@ -76,7 +88,6 @@ const Dashboard = () => {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
-  const selectedTeacher = teachers.find((t) => t._id === teacherId);
   const recentSessions = dashboard.recentSessions || [];
   const hasActiveSession = recentSessions.some((session) => session.status === 'active');
 
@@ -101,16 +112,6 @@ const Dashboard = () => {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <select
-            className="field w-auto min-w-[180px]"
-            value={teacherId}
-            onChange={(e) => setTeacherId(e.target.value)}
-          >
-            {!teachers.length && <option value="">No teachers</option>}
-            {teachers.map((t) => (
-              <option key={t._id} value={t._id}>{t.name} · {t.grade}</option>
-            ))}
-          </select>
           <button
             type="button"
             onClick={loadDashboard}
@@ -212,3 +213,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

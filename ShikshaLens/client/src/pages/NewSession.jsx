@@ -28,9 +28,13 @@ const NewSession = () => {
   useEffect(() => {
     const loadTeachers = async () => {
       try {
-        const response = await api.get('/teachers');
-        const teacherList = response.data.teachers || [];
         const savedId = savedTeacherId();
+        if (!savedId) {
+          setError('Please sign in before starting a session.');
+          return;
+        }
+        const response = await api.get(`/teachers?teacherId=${savedId}`);
+        const teacherList = response.data.teachers || [];
         const nextId = teacherList.some((t) => t._id === savedId)
           ? savedId
           : teacherList[0]?._id || '';

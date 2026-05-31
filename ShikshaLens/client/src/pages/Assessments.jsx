@@ -133,9 +133,14 @@ const Assessments = () => {
   const interventionGroups = detail?.interventionGroups || [];
 
   const loadTeachers = useCallback(async () => {
-    const response = await api.get('/teachers');
-    const teacherList = response.data.teachers || [];
     const savedId = savedTeacherId();
+    if (!savedId) {
+      setError('Please sign in before managing assessments.');
+      setLoading(false);
+      return;
+    }
+    const response = await api.get(`/teachers?teacherId=${savedId}`);
+    const teacherList = response.data.teachers || [];
     const nextId = teacherList.some((teacher) => teacher._id === savedId)
       ? savedId
       : teacherList[0]?._id || '';

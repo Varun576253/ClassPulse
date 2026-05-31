@@ -13,8 +13,22 @@ const riskBadge = {
 
 const confidenceBadge = {
   high: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  good: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   medium: 'bg-amber-50 text-amber-700 border-amber-200',
-  low: 'bg-rose-50 text-rose-700 border-rose-200'
+  low: 'bg-amber-50 text-amber-700 border-amber-200',
+  veryLow: 'bg-rose-50 text-rose-700 border-rose-200',
+  'very low': 'bg-rose-50 text-rose-700 border-rose-200'
+};
+
+const feedbackBadge = (message = {}) => {
+  const status = String(message.status || '').toLowerCase();
+  const deliveryMode = String(message.deliveryMode || '').toLowerCase();
+  const greenApiFailure = status.includes('greenapi') || status === 'failed' || deliveryMode.includes('greenapi');
+  const sent = ['saved', 'delivered', 'sent'].includes(status) && !greenApiFailure;
+  return {
+    label: sent ? 'AI Feedback - SENT' : 'AI Feedback - SAVED',
+    className: sent ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+  };
 };
 
 const LANGUAGES = ['English', 'Hindi', 'Telugu', 'Marathi', 'Tamil'];
@@ -168,7 +182,7 @@ const StudentProgress = () => {
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {student.grade} · {student.teacherId?.name} · {student.teacherId?.school}
+            {student.grade} Â· {student.teacherId?.name} Â· {student.teacherId?.school}
           </p>
         </div>
 
@@ -176,7 +190,7 @@ const StudentProgress = () => {
           {[
             { label: 'Sessions', value: sessionCount },
             { label: 'Avg score', value: `${avgScore}%` },
-            { label: 'Latest', value: latestScore !== null ? `${latestScore}%` : '–' }
+            { label: 'Latest', value: latestScore !== null ? `${latestScore}%` : 'â€“' }
           ].map(({ label, value }) => (
             <div key={label} className="panel rounded-xl p-4 text-center min-w-[80px]">
               <p className="text-2xl font-black text-[#11233f]">{value}</p>
@@ -304,7 +318,7 @@ const StudentProgress = () => {
                   <div className="min-w-0">
                     <p className="truncate font-black text-[#11233f]">{analysis.assessment?.title || analysis.assessment?.topic || 'Assessment'}</p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {analysis.assessment?.subject || student.teacherId?.subject} Â· {new Date(analysis.createdAt).toLocaleDateString()}
+                      {analysis.assessment?.subject || student.teacherId?.subject} Ã‚Â· {new Date(analysis.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <span className={`rounded-lg px-2 py-1 text-xs font-black uppercase ${riskBadge[analysis.riskLevel] || riskBadge.low}`}>
@@ -369,7 +383,7 @@ const StudentProgress = () => {
                       <span className="truncate text-xs font-black text-[#11233f]">{item.concept}</span>
                       <span className="text-xs font-bold capitalize text-indigo-700">{item.status}</span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">{item.materialType} Â· {item.assessment?.topic || 'Assessment'}</p>
+                    <p className="mt-1 text-xs text-slate-500">{item.materialType} Ã‚Â· {item.assessment?.topic || 'Assessment'}</p>
                   </div>
                 ))}
               </div>
@@ -413,17 +427,15 @@ const StudentProgress = () => {
             {!feedbackMessages.length && (
               <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center">
                 <TrendingUp size={24} className="mx-auto text-slate-300 mb-2" />
-                <p className="text-sm text-slate-500">No WhatsApp feedback yet</p>
-                <p className="mt-0.5 text-xs text-slate-400">Feedback is sent after session analysis</p>
+                <p className="text-sm text-slate-500">No AI feedback yet</p>
+                <p className="mt-0.5 text-xs text-slate-400">Feedback is saved after session analysis</p>
               </div>
             )}
             <div className="space-y-3">
               {feedbackMessages.map((msg) => (
                 <article key={msg._id} className="rounded-xl border border-slate-200 bg-white p-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-black uppercase ${
-                      msg.status === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                    }`}>{msg.deliveryMode} · {msg.status}</span>
+                    <span className={`rounded-md px-2 py-0.5 text-xs font-black uppercase ${feedbackBadge(msg).className}`}>{feedbackBadge(msg).label}</span>
                     <span className="text-xs text-slate-400">{new Date(msg.createdAt).toLocaleDateString()}</span>
                   </div>
                   <p className="text-xs leading-5 text-slate-700">{msg.content}</p>

@@ -13,6 +13,7 @@ const analyticsRoutes = require('./routes/analytics');
 const assessmentsRoutes = require('./routes/assessments');
 const systemRoutes = require('./routes/system');
 const { recoverPendingJobs } = require('./services/assessmentProcessingQueue');
+const { query } = require('./config/db');
 
 const app = express();
 const port = process.env.API_PORT || 3000;
@@ -55,6 +56,24 @@ const start = async () => {
   try {
     await connectDB();
     await recoverPendingJobs();
+    setInterval(async () => {
+      try {
+        const result = await query(
+          `UPDATE sessions
+           SET status = 'closed', form_status = 'closed', closed_at = COALESCE(closed_at, NOW())
+           WHERE status = 'active'
+             AND deadline IS NOT NULL
+             AND deadline <= NOW()
+           RETURNING id`
+        );
+
+        if (result.rowCount) {
+          console.log(`[session] Auto-closed ${result.rowCount} expired session(s).`);
+        }
+      } catch (error) {
+        console.error('[session] Deadline sweep failed:', error.message);
+      }
+    }, 30000);
     app.listen(port, () => {
       console.log(`[server] ClassPulse API listening on http://localhost:${port}`);
     });

@@ -147,7 +147,7 @@ const analyzeSession = async (req, res) => {
       .populate('teacherId', 'name school subject grade language')
       .populate('responses.studentId', 'name phone riskLevel confidenceLevel');
     broadcast(String(session._id), 'analysed', { session: completeSession });
-    console.log(`[analysis] Completed ${session.topic} analysis with ${feedbackLogs.length} feedback deliveries.`);
+    console.log(`[analysis] Completed ${session.topic} analysis with ${feedbackLogs.length} saved feedback records.`);
     return res.json({ success: true, analysis: completeSession.classInsight, session: completeSession });
   } catch (error) {
     console.error('[analysis] Session analysis failed:', error.message);

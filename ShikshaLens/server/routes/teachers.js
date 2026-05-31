@@ -7,8 +7,17 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const teachers = await Teacher.find().sort({ createdAt: -1 });
-    return res.json({ success: true, teachers });
+    const teacherId = req.query.teacherId;
+    if (!teacherId) {
+      return res.status(403).json({ success: false, error: 'Teacher context is required.' });
+    }
+
+    const teacher = await Teacher.findById(teacherId);
+    if (!teacher) {
+      return res.status(404).json({ success: false, error: 'Teacher not found.' });
+    }
+
+    return res.json({ success: true, teacher, teachers: [teacher] });
   } catch (error) {
     console.error('[teachers] List failed:', error.message);
     return res.status(500).json({ success: false, error: error.message });

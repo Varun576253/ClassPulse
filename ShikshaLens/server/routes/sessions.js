@@ -6,7 +6,7 @@ const Teacher = require('../models/Teacher');
 const { previewQuestions, startSession } = require('../controllers/questionController');
 const { analyzeSession } = require('../controllers/analysisController');
 const { resendSessionFeedback } = require('../controllers/feedbackController');
-const { addClient, removeClient } = require('../services/sseService');
+const { addClient, removeClient, broadcast } = require('../services/sseService');
 const { buildQuizQr } = require('../utils/quizQr');
 
 const router = express.Router();
@@ -40,6 +40,8 @@ router.get('/:sessionId/questions', async (req, res) => {
         language: session.language,
         status: session.status,
         formStatus: session.formStatus,
+        deadline: session.deadline,
+        closedAt: session.closedAt,
         teacher: session.teacherId
       },
       questions: safeQuestions
@@ -66,6 +68,19 @@ router.post('/:sessionId/submit', async (req, res) => {
     const session = await Session.findById(req.params.sessionId);
     if (!session) {
       return res.status(404).json({ success: false, error: 'Session not found.' });
+    }
+
+    if (session.status === 'closed') {
+      return res.status(400).json({ success: false, error: 'This session has ended' });
+    }
+
+    if (session.deadline && new Date() > new Date(session.deadline)) {
+      session.status = 'closed';
+      session.closedAt = new Date();
+      session.formStatus = 'closed';
+      await session.save();
+      broadcast(req.params.sessionId, 'session_closed', { type: 'session_closed', session });
+      return res.status(400).json({ success: false, error: 'Session deadline has passed' });
     }
 
     if (session.status !== 'active' || session.formStatus === 'closed') {
@@ -125,8 +140,7 @@ router.post('/:sessionId/submit', async (req, res) => {
     session.responses = [...(session.responses || []), newResponse];
     await session.save();
 
-    const { broadcastToSession } = require('../services/sseService');
-    broadcastToSession(req.params.sessionId, 'response', {
+    broadcast(req.params.sessionId, 'response', {
       responses: session.responses
     });
 
@@ -230,6 +244,55 @@ router.put('/:sessionId/form-status', async (req, res) => {
 router.post('/:sessionId/analyze', analyzeSession);
 router.post('/:sessionId/analyse', analyzeSession);
 router.post('/:sessionId/feedback', resendSessionFeedback);
+
+router.post('/:sessionId/close', async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Session not found.' });
+    }
+
+    session.status = 'closed';
+    session.formStatus = 'closed';
+    session.closedAt = new Date();
+    await session.save();
+
+    const updated = await Session.findById(session._id)
+      .populate('teacherId', 'name school subject grade language')
+      .populate('responses.studentId', 'name phone riskLevel confidenceLevel');
+    broadcast(String(session._id), 'session_closed', { type: 'session_closed', session: updated });
+    return res.json({ success: true, session: updated });
+  } catch (error) {
+    console.error('[session] Close failed:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:sessionId/deadline', async (req, res) => {
+  try {
+    const minutes = Number(req.body.minutes);
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > 60) {
+      return res.status(400).json({ success: false, error: 'Deadline must be 1-60 minutes.' });
+    }
+
+    const session = await Session.findById(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Session not found.' });
+    }
+
+    session.deadline = new Date(Date.now() + minutes * 60 * 1000);
+    await session.save();
+
+    const updated = await Session.findById(session._id)
+      .populate('teacherId', 'name school subject grade language')
+      .populate('responses.studentId', 'name phone riskLevel confidenceLevel');
+    broadcast(String(session._id), 'deadline_set', { session: updated });
+    return res.json({ success: true, session: updated });
+  } catch (error) {
+    console.error('[session] Deadline failed:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 router.get('/:sessionId/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');

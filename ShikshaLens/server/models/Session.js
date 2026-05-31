@@ -37,7 +37,9 @@ const normalize = (session) => ({
     groupedStudents: normalizeGroups(session.groupedStudents || defaultGroups()),
     classInsight: session.classInsight || {},
     quizUrl: session.quizUrl || '',
-    qrCode: session.qrCode || ''
+    qrCode: session.qrCode || '',
+    deadline: session.deadline || null,
+    closedAt: session.closedAt || null
 });
 
 module.exports = createModel({
@@ -57,7 +59,9 @@ module.exports = createModel({
     groupedStudents: 'grouped_students',
     classInsight: 'class_insight',
     quizUrl: 'quiz_url',
-    qrCode: 'qr_code'
+    qrCode: 'qr_code',
+    deadline: 'deadline',
+    closedAt: 'closed_at'
   },
   jsonColumns: ['questions', 'responses', 'groupedStudents', 'classInsight'],
   defaults: () => ({
@@ -69,7 +73,9 @@ module.exports = createModel({
     groupedStudents: defaultGroups(),
     classInsight: {},
     quizUrl: '',
-    qrCode: ''
+    qrCode: '',
+    deadline: null,
+    closedAt: null
   }),
   normalize,
   populate: async (session, path, fields, selectFields) => {

@@ -18,7 +18,7 @@ import ClassActionPlan from '../components/ClassActionPlan';
 import InterventionPlans from '../components/InterventionPlans';
 import LiveResponseFeed from '../components/LiveResponseFeed';
 import SessionGapAnalysis from '../components/SessionGapAnalysis';
-import { useNotifications } from '../utils/notifications';
+import { addNotification } from '../utils/notifications';
 
 const Toast = ({ message, onClose }) => (
   <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[#11233f] px-5 py-3 text-sm font-semibold text-white shadow-2xl">
@@ -54,7 +54,6 @@ const SessionResults = () => {
   const [messages, setMessages] = useState([]);
   const [now, setNow] = useState(Date.now());
   const sseRef = useRef(null);
-  const { addNotification } = useNotifications();
 
   const showLocalToast = (msg) => {
     setToast(msg);

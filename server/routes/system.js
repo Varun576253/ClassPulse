@@ -1,3 +1,4 @@
+const os = require('os');
 const express = require('express');
 const { smsReady } = require('../services/smsService');
 const { getGreenApiInstanceStatus, greenApiReady } = require('../services/whatsappService');
@@ -104,6 +105,26 @@ router.get('/status', async (req, res) => {
       ]
     }
   });
+});
+
+router.get('/local-addresses', (req, res) => {
+  const port = Number(process.env.API_PORT || 3000);
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+
+  Object.entries(interfaces).forEach(([name, list]) => {
+    (list || []).forEach((iface) => {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        addresses.push({
+          name,
+          address: iface.address,
+          quizUrl: `http://${iface.address}:${port}`
+        });
+      }
+    });
+  });
+
+  return res.json({ success: true, addresses, port });
 });
 
 module.exports = router;

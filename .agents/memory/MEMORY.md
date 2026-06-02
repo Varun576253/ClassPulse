@@ -1,0 +1,6 @@
+- [Auth credential field](auth-credential.md) — login accepts email OR phone; server normalizes phone with regexp_replace, email with lower(); teacher table has email column added by migration.
+- [Health score null](health-score-null.md) — calculateClassHealthScore returns null (not 50) when no students exist; Dashboard passes null to ClassHealthScore which renders empty state.
+- [Student phone format](student-phone-format.md) — students stored as 91XXXXXXXXXX (no + prefix); quiz login does Student.findOne({ phone: `91${cleanMobile}` }) where cleanMobile is 10 digits.
+- [Auto-seed](auto-seed.md) — server/services/autoSeed.js checks teacher count; if zero, runs `node server/seed.js` via execSync on startup; seed always destroys existing data first.
+- [Offline QR mode](offline-qr-mode.md) — buildQuizQr(sessionId, overrideBaseUrl?) accepts optional base URL; /api/system/local-addresses returns LAN IPs; NewSession passes offlineBaseUrl to /sessions/start and /custom-questions/start.
+- [Seed demo credentials](seed-demo-credentials.md) — sunita@classpulse.demo / ClassPulse@123 and ramesh@classpulse.demo / ClassPulse@123; student quiz phones 9876541200–9876541224 (10-digit, no country code).

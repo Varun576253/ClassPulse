@@ -1,4 +1,4 @@
-import { Bot, Edit, Send, Users, WandSparkles } from 'lucide-react';
+import { Bot, Edit, Loader2, Send, Users, WandSparkles, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -25,6 +25,11 @@ const NewSession = () => {
   const [qrCode, setQrCode] = useState('');
   const [quizUrl, setQuizUrl] = useState('');
   const [startedSessionId, setStartedSessionId] = useState('');
+
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [localAddresses, setLocalAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState('');
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
 
   useEffect(() => {
     const loadTeachers = async () => {
@@ -68,6 +73,26 @@ const NewSession = () => {
     loadTeacherData();
   }, [teacherId]);
 
+  useEffect(() => {
+    if (!offlineMode) return;
+    const fetchAddresses = async () => {
+      try {
+        setLoadingAddresses(true);
+        const response = await api.get('/system/local-addresses');
+        const addrs = response.data.addresses || [];
+        setLocalAddresses(addrs);
+        if (addrs.length > 0 && !selectedAddress) {
+          setSelectedAddress(addrs[0].quizUrl.replace('/quiz', ''));
+        }
+      } catch {
+        setLocalAddresses([]);
+      } finally {
+        setLoadingAddresses(false);
+      }
+    };
+    fetchAddresses();
+  }, [offlineMode]);
+
   const teacher = teachers.find((t) => t._id === teacherId);
   const topic = topicChoice === 'custom' ? customTopic.trim() : topicChoice;
   const payload = useMemo(() => ({
@@ -96,7 +121,11 @@ const NewSession = () => {
     try {
       setSending(true);
       setError('');
-      const response = await api.post('/sessions/start', { ...payload, questions });
+      const body = { ...payload, questions };
+      if (offlineMode && selectedAddress) {
+        body.offlineBaseUrl = selectedAddress;
+      }
+      const response = await api.post('/sessions/start', body);
       localStorage.setItem('classpulse-teacher', teacherId);
       setQrCode(response.data.qrCode || '');
       setQuizUrl(response.data.quizUrl || '');
@@ -121,10 +150,10 @@ const NewSession = () => {
   return (
     <div className="space-y-5">
       <div className="border-b border-slate-200 pb-5">
-        <p className="text-xs font-black uppercase tracking-wider text-blue-600">New session</p>
-        <h1 className="mt-1 text-3xl font-black text-[#11233f]">Send a check-in</h1>
+        <p className="text-xs font-black uppercase tracking-wider text-blue-600">New check-in</p>
+        <h1 className="mt-1 text-3xl font-black text-[#11233f]">Start a diagnostic session</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Questions are delivered by QR code · AI analyses responses instantly
+          AI generates questions that reveal misconceptions · Students join by QR code
         </p>
       </div>
 
@@ -222,6 +251,70 @@ const NewSession = () => {
             )}
           </div>
 
+          {/* Offline Classroom Mode */}
+          <div className={`rounded-xl border p-4 ${offlineMode ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+            <button
+              type="button"
+              onClick={() => setOfflineMode(!offlineMode)}
+              className="flex w-full items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                {offlineMode ? <WifiOff size={16} className="text-amber-700" /> : <Wifi size={16} className="text-slate-500" />}
+                <div className="text-left">
+                  <p className={`text-sm font-black ${offlineMode ? 'text-amber-900' : 'text-slate-700'}`}>
+                    Offline Classroom Mode
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">QR uses local network — no internet needed</p>
+                </div>
+              </div>
+              <span className={`h-5 w-9 rounded-full transition-colors ${offlineMode ? 'bg-amber-500' : 'bg-slate-300'} relative shrink-0`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${offlineMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </span>
+            </button>
+
+            {offlineMode && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-amber-800 font-semibold">
+                  Create a mobile hotspot on this device, then students connect to it and scan the QR.
+                </p>
+                {loadingAddresses && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Loader2 size={12} className="animate-spin" />
+                    Detecting network interfaces...
+                  </div>
+                )}
+                {!loadingAddresses && localAddresses.length === 0 && (
+                  <p className="text-xs text-amber-700">No local network interfaces found. Start your hotspot first.</p>
+                )}
+                {localAddresses.length > 0 && (
+                  <div className="grid gap-1">
+                    {localAddresses.map((addr) => (
+                      <label key={addr.address} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="localAddress"
+                          value={addr.quizUrl.replace('/quiz', '')}
+                          checked={selectedAddress === addr.quizUrl.replace('/quiz', '')}
+                          onChange={(e) => setSelectedAddress(e.target.value)}
+                          className="shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <span className="text-xs font-black text-slate-700">{addr.address}</span>
+                          <span className="ml-2 text-[10px] text-slate-400">{addr.name}</span>
+                        </div>
+                      </label>
+                    ))}
+                    {selectedAddress && (
+                      <p className="mt-1 text-[10px] text-amber-700 break-all">
+                        QR will point to: {selectedAddress}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {error && (
             <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">{error}</p>
           )}
@@ -261,9 +354,12 @@ const NewSession = () => {
 
           {qrCode && (
             <div className="panel rounded-xl p-6 text-center mt-4">
-              <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
-                Students scan this to join
-              </p>
+              <div className="mb-3 flex items-center justify-center gap-2">
+                {offlineMode
+                  ? <><WifiOff size={14} className="text-amber-600" /><p className="text-xs font-black uppercase tracking-wider text-amber-700">Offline mode · Local network</p></>
+                  : <p className="text-xs font-black uppercase tracking-wider text-slate-400">Students scan this to join</p>
+                }
+              </div>
               <img
                 src={qrCode}
                 alt="Quiz QR Code"
@@ -313,7 +409,7 @@ const NewSession = () => {
                     : 'Switch to AI mode for question preview'
                   }
                 </p>
-                <p className="mt-1 text-xs text-slate-400">Questions reveal specific misconceptions, not just right/wrong</p>
+                <p className="mt-1 text-xs text-slate-400">Questions are designed to reveal specific misconceptions — not just right/wrong</p>
               </div>
             </div>
           )}

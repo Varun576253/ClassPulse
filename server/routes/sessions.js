@@ -160,7 +160,7 @@ router.post('/:sessionId/submit', async (req, res) => {
 
 router.post('/custom-questions/start', async (req, res) => {
   try {
-    const { teacherId, topic, subject, grade, language, questions: customQuestions } = req.body;
+    const { teacherId, topic, subject, grade, language, questions: customQuestions, offlineBaseUrl } = req.body;
 
     if (!teacherId || !topic || !Array.isArray(customQuestions) || !customQuestions.length) {
       return res.status(400).json({ success: false, error: 'Teacher, topic, and questions are required.' });
@@ -200,7 +200,7 @@ router.post('/custom-questions/start', async (req, res) => {
       groupedStudents: { advanced: [], average: [], needsSupport: [] }
     });
 
-    const { quizUrl, qrCode } = await buildQuizQr(session._id);
+    const { quizUrl, qrCode } = await buildQuizQr(session._id, offlineBaseUrl || null);
     session.quizUrl = quizUrl;
     session.qrCode = qrCode;
     await session.save();

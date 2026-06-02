@@ -1,5 +1,4 @@
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config();
 
 const cors = require('cors');
@@ -15,6 +14,7 @@ const assessmentsRoutes = require('./routes/assessments');
 const systemRoutes = require('./routes/system');
 const webhookRoutes = require('./routes/webhook');
 const { recoverPendingJobs } = require('./services/assessmentProcessingQueue');
+const { runAutoSeed } = require('./services/autoSeed');
 const { query } = require('./config/db');
 
 const app = express();
@@ -58,6 +58,7 @@ app.use((req, res) => res.status(404).json({ success: false, error: 'Route not f
 const start = async () => {
   try {
     await connectDB();
+    await runAutoSeed();
     await recoverPendingJobs();
     setInterval(async () => {
       try {

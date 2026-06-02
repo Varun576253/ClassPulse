@@ -23,7 +23,7 @@ const previewQuestions = async (req, res) => {
 
 const startSession = async (req, res) => {
   try {
-    const { teacherId, topic, subject, grade, language, questions: previewedQuestions } = req.body;
+    const { teacherId, topic, subject, grade, language, questions: previewedQuestions, offlineBaseUrl } = req.body;
 
     if (!teacherId || !topic) {
       return res.status(400).json({ success: false, error: 'Teacher and topic are required.' });
@@ -58,7 +58,7 @@ const startSession = async (req, res) => {
       { upsert: true }
     );
 
-    const { quizUrl, qrCode } = await buildQuizQr(session._id);
+    const { quizUrl, qrCode } = await buildQuizQr(session._id, offlineBaseUrl || null);
     session.quizUrl = quizUrl;
     session.qrCode = qrCode;
     await session.save();

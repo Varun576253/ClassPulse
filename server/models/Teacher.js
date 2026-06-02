@@ -10,6 +10,7 @@ module.exports = createModel({
     grade: 'grade',
     language: 'language',
     phone: 'phone',
+    email: 'email',
     createdAt: 'created_at'
   },
   defaults: () => ({

@@ -1,0 +1,612 @@
+READ THIS ENTIRE PROMPT BEFORE MAKING ANY CHANGES.
+
+Do not start coding immediately.
+
+First analyze the ENTIRE repository, architecture, database schema, API routes, frontend pages, session lifecycle, analytics flow, authentication flow, offline flow, QR workflow, AI workflow, and learning-gap workflow.
+
+Only after fully understanding the system should implementation begin.
+
+==================================================
+PRIMARY OBJECTIVE
+=================
+
+The objective is NOT to build the most feature-rich product.
+
+The objective is to build the strongest possible solution for the challenge:
+
+LEARNING GAPS AND TIMELY FEEDBACK
+
+Challenge:
+
+Teachers often lack practical ways to diagnose student-level learning gaps and provide timely, actionable feedback in large and mixed-ability classrooms.
+
+Students who need support are often not identified early enough.
+
+The final product should directly solve that problem.
+
+==================================================
+OFFICIAL CHALLENGE REQUIREMENTS
+===============================
+
+Who is affected:
+
+* Teachers
+* Students in large classrooms
+
+Key considerations:
+
+* Low teacher burden
+* Timely feedback
+* Actionable insights
+* Classroom integration
+* Student progress
+
+Design principles:
+
+Technical Robustness & Real-World Readiness
+
+* Offline-ready and low-connectivity conscious
+* Entry-level smartphone compatibility
+* Low compute requirements
+* Handle fragmented and inconsistent data
+* Open-source and cost-efficient technologies preferred
+
+Human-Centered Design
+
+* Regional language support
+* Accessibility support
+* Diverse learning needs
+* Augment teachers rather than replace them
+
+Feasibility, Scalability & Pilot Readiness
+
+* Pilotable within 12 months
+* Replicable across districts and states
+* Modular architecture
+* Real-world adoption strategy
+
+Every implementation decision should improve performance against these requirements.
+
+==================================================
+PRODUCT POSITIONING
+===================
+
+The platform should feel like:
+
+"A Teacher Learning Gap Intervention Assistant"
+
+NOT:
+
+* A quiz platform
+* A marks portal
+* A principal dashboard
+* A district analytics portal
+* A school ERP
+* A QR code generator
+* An assessment management system
+* A paper upload tool
+
+==================================================
+IMPORTANT IMPLEMENTATION RULES
+==============================
+
+* Modify the existing codebase.
+* Reuse existing architecture.
+* Reuse existing APIs.
+* Reuse existing analytics where possible.
+* Reuse existing database structure where practical.
+* Do not rebuild from scratch.
+* Preserve working functionality.
+* Prioritize stability.
+* Prioritize real functionality.
+* No fake features.
+* No demo-only features.
+* No presentation-only features.
+
+Everything shown must actually work.
+
+==================================================
+LOCAL DEVELOPMENT REQUIREMENT
+=============================
+
+The application must work from a fresh clone using ONLY:
+
+npm install
+npm run dev
+
+Remove:
+
+* Replit-only dependencies
+* Replit-only APIs
+* Replit-specific assumptions
+
+Verify local execution.
+
+==================================================
+STUDENT AUTHENTICATION
+======================
+
+Remove free-form student name login.
+
+Students should join using only:
+
+Registered Mobile Number
+
+Requirements:
+
+* Student must already exist in teacher roster.
+* Reject unknown students.
+* Prevent quiz submissions from creating students.
+* Keep QR workflow intact.
+
+==================================================
+LEARNING GAP FIRST EXPERIENCE
+=============================
+
+Every screen should answer:
+
+* Which students need help?
+* What are they struggling with?
+* What should the teacher do next?
+* Is the intervention working?
+
+Reduce emphasis on:
+
+* Scores
+* Marks
+* Percentages
+* Quiz statistics
+
+Increase emphasis on:
+
+* Learning gaps
+* Misconceptions
+* Interventions
+* Progress tracking
+
+==================================================
+DASHBOARD REDESIGN
+==================
+
+Current dashboard contains too many analytics.
+
+Simplify aggressively.
+
+Teacher should immediately see:
+
+1. Students needing support
+2. Most common misconception
+3. Recommended teacher action
+4. Recent sessions
+5. Student progress summary
+
+Remove clutter.
+
+Avoid overwhelming teachers.
+
+==================================================
+REMOVE ADMIN / PRINCIPAL FEATURES
+=================================
+
+Remove or heavily simplify:
+
+* Principal dashboards
+* District analytics
+* Executive reports
+* Administrative monitoring
+
+The application is teacher-focused.
+
+If a feature does not help a classroom teacher identify or remediate learning gaps, remove it or simplify it.
+
+==================================================
+FIX ANALYTICS CORRECTNESS
+=========================
+
+Do not fabricate analytics.
+
+Examples:
+
+* Health Score must not show 50 when there are zero students.
+* Improvement percentages must not show values when there is no data.
+* Gap percentages must not show values when there is no data.
+
+Proper empty states:
+
+* No students yet
+* No sessions yet
+* Run your first session
+* Not enough data available
+
+All metrics must be data-driven and mathematically correct.
+
+==================================================
+STUDENT LEARNING PROFILES
+=========================
+
+For every student provide:
+
+* Strengths
+* Weak topics
+* Confidence level
+* Risk level
+* Suggested intervention
+* Learning history
+* Improvement trend
+
+Reuse:
+
+* learningProfile
+* confidenceLevel
+* riskLevel
+* interventionHistory
+* remediationHistory
+* assessmentHistory
+
+==================================================
+AUTOMATIC GROUPING
+==================
+
+Automatically group students into:
+
+* Advanced
+* Average
+* Needs Support
+
+Display:
+
+* Counts
+* Student lists
+* Suggested classroom actions
+
+==================================================
+MISCONCEPTION DETECTION
+=======================
+
+Identify:
+
+* Common misconceptions
+* Frequently missed concepts
+* Recurring mistakes
+
+Generate:
+
+* Reteaching recommendations
+* Small-group intervention plans
+* Follow-up activities
+
+==================================================
+INTERVENTION TRACKING
+=====================
+
+Track:
+
+* Learning gap identified
+* Intervention applied
+* Date applied
+* Follow-up assessment
+* Improvement trend
+
+Provide teacher-friendly timeline view.
+
+==================================================
+MULTILINGUAL SUPPORT
+====================
+
+Support:
+
+* English
+* Hindi
+* Telugu
+* Tamil
+* Marathi
+
+Recommendations should respect selected language.
+
+==================================================
+OFFLINE-FIRST SUPPORT
+=====================
+
+Implement real offline support.
+
+Requirements:
+
+* Teacher can create sessions offline.
+* Responses stored locally.
+* Sync when internet returns.
+* Connectivity-safe.
+* Prevent data loss.
+* Must work outside Replit.
+
+Document:
+
+* Offline capabilities
+* Online requirements
+* Sync behavior
+
+==================================================
+TRUE OFFLINE CLASSROOM MODE
+===========================
+
+HIGH PRIORITY
+
+Implement strongest realistic offline classroom solution possible.
+
+Requirements:
+
+* Teacher device acts as primary node.
+* Teacher enables Offline Classroom Mode.
+* Teacher creates session without internet.
+* Teacher generates QR code.
+* Teacher can create hotspot.
+* Students connected to hotspot join through QR.
+* QR must contain the teacher device's local network address, NOT localhost and NOT a cloud URL.
+* Student devices do not require internet.
+* Responses stored locally on teacher device.
+* Teacher can review results offline.
+* Synchronize later when internet returns.
+
+Support:
+
+* Cloud Mode
+* Offline Classroom Mode
+
+Architecture Requirements:
+
+* Lightweight
+* Low memory
+* Low battery usage
+* Entry-level Android compatible
+* Reuse existing structures
+
+If full local-network implementation is not realistically achievable within the current stack, explain limitations and implement the strongest practical alternative.
+
+Do not fake offline support.
+
+==================================================
+MOBILE-FIRST DESIGN
+===================
+
+Primary user:
+Teacher using a smartphone in a classroom.
+
+Optimize:
+
+* Dashboard
+* Session Results
+* Student Progress
+* Intervention workflow
+
+Critical actions should be accessible within seconds.
+
+Avoid desktop-heavy layouts.
+
+==================================================
+TECHNICAL ROBUSTNESS
+====================
+
+Ensure:
+
+* Low bandwidth usage
+* Low memory usage
+* Low compute requirements
+* Cost-efficient operation
+* Open-source friendly architecture
+
+Handle:
+
+* Missing data
+* Partial data
+* Connectivity interruptions
+* Sync failures
+* Inconsistent records
+
+==================================================
+CHALLENGE-FIRST VALIDATION
+==========================
+
+IMPORTANT:
+
+The QR workflow, assessment workflow, paper upload workflow, mobile number login workflow, and offline classroom workflow are implementation ideas.
+
+They are NOT the objective.
+
+The objective remains:
+
+Help teachers identify learning gaps and provide timely actionable feedback.
+
+Before implementing any feature, evaluate whether it directly supports the challenge goals.
+
+Questions to continuously ask:
+
+* Does this reduce teacher burden?
+* Does this improve learning gap detection?
+* Does this improve intervention quality?
+* Does this improve student progress tracking?
+* Does this improve classroom integration?
+* Does this improve real-world adoption?
+
+Bad outcomes:
+
+* Product feels like a QR generator.
+* Product feels like a quiz platform.
+* Product feels like an assessment tool.
+* Product feels like a paper upload system.
+* Product feels like an exam management application.
+
+Desired outcome:
+
+* Product feels like a teacher learning-gap intervention assistant.
+* QR and assessments are evidence collection mechanisms.
+* The real value is learning-gap identification, misconceptions, interventions, and progress tracking.
+
+If analysis shows the current workflow is too assessment-centric, redesign portions while preserving functionality.
+
+Challenge requirements take priority over implementation preferences.
+
+==================================================
+HACKATHON DEMO ALIGNMENT
+========================
+
+The application must be FULLY FUNCTIONAL.
+
+Do NOT build a fake prototype.
+
+Do NOT build presentation-only features.
+
+However, ensure the final product naturally supports all required presentation sections.
+
+Demo flow should clearly support:
+
+Teacher Login
+→ Student Roster
+→ Create Session
+→ Generate QR
+→ Student Join
+→ Assessment
+→ Learning Gap Detection
+→ Misconception Detection
+→ Student Grouping
+→ Intervention Recommendation
+→ Progress Tracking
+
+The final application should support a simple 3–5 minute screen recording walkthrough.
+
+The demo should naturally tell this story:
+
+Teacher discovers learning gaps
+→ AI identifies misconceptions
+→ Students grouped by need
+→ Teacher receives intervention plan
+→ Follow-up assessment shows improvement
+
+==================================================
+AI METHODOLOGY
+==============
+
+Document:
+
+* Models used
+* Inputs
+* Outputs
+* Evaluation approach
+* Cost considerations
+* Offline considerations
+
+==================================================
+SYSTEM ARCHITECTURE
+===================
+
+Provide:
+
+* Architecture diagram
+* Data flow diagram
+* Offline architecture
+* Sync architecture
+
+Use actual implementation.
+
+==================================================
+REAL-WORLD READINESS
+====================
+
+Visibly demonstrate:
+
+* Offline readiness
+* Low connectivity support
+* Entry-level smartphone compatibility
+* Regional language support
+
+==================================================
+DEMO DATABASE
+=============
+
+Reset database.
+
+Create realistic seed data:
+
+* 1 teacher
+* 25 students
+* Multiple sessions
+* Learning gaps
+* Misconceptions
+* Intervention history
+* Improvement over time
+* Risk levels
+* Student groups
+
+==================================================
+DEMO LOGIN CREDENTIALS
+======================
+
+Create verified credentials.
+
+Teacher:
+
+* Email
+* Password
+* Name
+* School
+* Subject
+* Grade
+
+Students:
+
+* Mobile number
+* Name
+* Grade
+* Risk level
+
+Requirements:
+
+* Must work immediately after:
+  npm install
+  npm run dev
+
+* Must be seeded automatically.
+
+* Must not depend on Replit.
+
+Provide final verified credentials.
+
+==================================================
+STABILIZATION PASS
+==================
+
+Audit and fix:
+
+* Broken imports
+* Runtime errors
+* Blank pages
+* Dead routes
+* Duplicate components
+* Unused code
+* Console warnings
+* Failed API requests
+
+==================================================
+FINAL DELIVERABLE
+=================
+
+After implementation provide:
+
+1. Files changed
+2. Features completed
+3. Database/schema changes
+4. APIs added
+5. Commands required to run
+6. Offline architecture explanation
+7. Demo flow for judges
+8. Demo credentials
+9. How each major feature maps to challenge requirements
+10. How teacher burden is reduced
+11. How student progress is improved
+12. Why this is stronger than a traditional assessment platform
+13. Known limitations
+14. Future improvements
+
+Do not stop after one feature.
+
+Do not ask for confirmation unless blocked by a technical limitation.
+
+Build the strongest possible submission for winning the Learning Gaps and Timely Feedback challenge.

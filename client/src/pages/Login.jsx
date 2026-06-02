@@ -1,10 +1,10 @@
-import { ArrowRight, BarChart3, KeyRound, Loader2, LockKeyhole, Phone, QrCode, UserPlus, Zap } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, KeyRound, Loader2, LockKeyhole, QrCode, UserPlus, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
 
-const emptyLogin = { phone: '', password: '' };
+const emptyLogin = { credential: '', password: '' };
 const emptyRegister = {
   name: '',
   school: '',
@@ -12,6 +12,7 @@ const emptyRegister = {
   grade: 'Class 6',
   language: 'English',
   phone: '',
+  email: '',
   password: ''
 };
 const emptyReset = { phone: '', code: '', password: '' };
@@ -56,7 +57,11 @@ const Login = () => {
       setLoading(true);
       setError('');
       setNotice('');
-      const response = await api.post('/auth/login', login);
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login.credential.trim());
+      const payload = isEmail
+        ? { email: login.credential.trim(), password: login.password }
+        : { phone: login.credential.trim(), password: login.password };
+      const response = await api.post('/auth/login', payload);
       finishAuth(response.data.teacher);
     } catch (err) {
       setError(err.message);
@@ -129,15 +134,15 @@ const Login = () => {
             <h1 className="text-2xl font-black leading-tight">Teacher sign in</h1>
           </div>
         </div>
-        <div className="mt-8 space-y-2 text-sm leading-6 text-slate-300">
-          <p>AI-powered diagnostic assessments for Indian school teachers.</p>
-          <p>Generate quizzes, track live responses, and get instant class insights.</p>
+        <div className="mt-6 space-y-2 text-sm leading-6 text-slate-300">
+          <p>AI-powered learning gap detection for Indian school teachers.</p>
+          <p>Identify which students need help, what they're struggling with, and what to do next — in minutes.</p>
         </div>
-        <div className="mt-8 grid gap-3">
+        <div className="mt-6 grid gap-3">
           {[
-            [QrCode, 'QR-based quizzes', 'Students scan a QR code to join — no app install needed'],
-            [Zap, 'AI question generation', 'Gemini generates curriculum-aligned questions instantly'],
-            [BarChart3, 'Live analytics', 'See who understood and who needs support in real time']
+            [QrCode, 'QR-based check-ins', 'Students scan to join — no app install needed'],
+            [Zap, 'AI misconception detection', 'Instantly spots what the class is getting wrong'],
+            [BarChart3, 'Intervention recommendations', 'Tells you exactly what to reteach and how']
           ].map(([Icon, title, desc]) => (
             <div key={title} className="rounded-lg border border-white/10 bg-white/5 p-3">
               <div className="flex items-center gap-2">
@@ -147,6 +152,17 @@ const Login = () => {
               <p className="mt-0.5 text-xs text-slate-400">{desc}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-6 rounded-lg border border-cyan-400/30 bg-cyan-900/20 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen size={14} className="text-cyan-300" />
+            <p className="text-xs font-black uppercase text-cyan-300">Demo credentials</p>
+          </div>
+          <div className="space-y-1 text-xs text-slate-300">
+            <p><span className="font-bold text-white">Email:</span> sunita@classpulse.demo</p>
+            <p><span className="font-bold text-white">Password:</span> ClassPulse@123</p>
+          </div>
         </div>
       </section>
 
@@ -181,13 +197,13 @@ const Login = () => {
         {mode === 'login' && (
           <form onSubmit={submitLogin} className="mt-6 grid gap-4">
             <AuthInput
-              icon={Phone}
-              label="Mobile number"
-              value={login.phone}
-              onChange={(e) => setLogin((curr) => ({ ...curr, phone: cleanPhone(e.target.value) }))}
+              icon={LockKeyhole}
+              label="Email or mobile number"
+              value={login.credential}
+              onChange={(e) => setLogin((curr) => ({ ...curr, credential: e.target.value }))}
               required
-              inputMode="tel"
-              placeholder="919876543210"
+              autoComplete="username"
+              placeholder="email@example.com or 919876543210"
             />
             <AuthInput
               icon={LockKeyhole}
@@ -196,6 +212,7 @@ const Login = () => {
               onChange={(e) => setLogin((curr) => ({ ...curr, password: e.target.value }))}
               required
               type="password"
+              autoComplete="current-password"
               placeholder="Your password"
             />
             <button
@@ -228,6 +245,13 @@ const Login = () => {
                 placeholder="Mobile with country code"
               />
             </div>
+            <input
+              className="field"
+              value={register.email}
+              onChange={(e) => setRegister((c) => ({ ...c, email: e.target.value.trim() }))}
+              type="email"
+              placeholder="Email address (optional)"
+            />
             <AuthInput
               icon={LockKeyhole}
               label="Password"
@@ -252,7 +276,7 @@ const Login = () => {
         {mode === 'forgot' && (
           <form onSubmit={resetCodeSent ? submitReset : sendResetCode} className="mt-6 grid gap-4">
             <AuthInput
-              icon={Phone}
+              icon={LockKeyhole}
               label="Registered mobile number"
               value={reset.phone}
               onChange={(e) => setReset((curr) => ({ ...curr, phone: cleanPhone(e.target.value) }))}

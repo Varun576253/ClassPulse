@@ -18,6 +18,7 @@ const publicTeacher = (teacher) => ({
   grade: teacher.grade,
   language: teacher.language,
   phone: teacher.phone,
+  email: teacher.email,
   createdAt: teacher.createdAt
 });
 
@@ -33,12 +34,26 @@ const findTeacherAuthByPhone = async (phone) => {
   return result.rows[0] || null;
 };
 
+const findTeacherAuthByEmail = async (email) => {
+  const result = await query(
+    `SELECT id, password_hash
+     FROM teachers
+     WHERE lower(COALESCE(email, '')) = lower($1)
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [email.trim()]
+  );
+  return result.rows[0] || null;
+};
+
 const validatePassword = (password = '') => {
   if (String(password).length < 8) {
     return 'Password must be at least 8 characters.';
   }
   return '';
 };
+
+const isEmail = (value = '') => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 router.post('/register', async (req, res) => {
   try {
@@ -63,13 +78,22 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ success: false, error: 'An account with this mobile number already exists.' });
     }
 
+    const emailVal = String(req.body.email || '').trim().toLowerCase() || null;
+    if (emailVal) {
+      const emailExists = await findTeacherAuthByEmail(emailVal);
+      if (emailExists) {
+        return res.status(409).json({ success: false, error: 'An account with this email already exists.' });
+      }
+    }
+
     const teacher = await Teacher.create({
       name: String(req.body.name).trim(),
       school: String(req.body.school).trim(),
       subject: String(req.body.subject).trim(),
       grade: String(req.body.grade).trim(),
       language: req.body.language || 'English',
-      phone: phoneValidation.phone
+      phone: phoneValidation.phone,
+      email: emailVal
     });
 
     await query(
@@ -87,14 +111,25 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const phoneValidation = validatePhone(req.body.phone);
-    if (!phoneValidation.valid) {
-      return res.status(400).json({ success: false, error: phoneValidation.error });
+    const credential = String(req.body.phone || req.body.email || '').trim();
+    if (!credential) {
+      return res.status(400).json({ success: false, error: 'Mobile number or email is required.' });
     }
 
-    const auth = await findTeacherAuthByPhone(phoneValidation.phone);
+    let auth = null;
+
+    if (isEmail(credential)) {
+      auth = await findTeacherAuthByEmail(credential);
+    } else {
+      const phoneValidation = validatePhone(credential);
+      if (!phoneValidation.valid) {
+        return res.status(400).json({ success: false, error: phoneValidation.error });
+      }
+      auth = await findTeacherAuthByPhone(phoneValidation.phone);
+    }
+
     if (!auth || !auth.password_hash || !verifyPassword(req.body.password || '', auth.password_hash)) {
-      return res.status(401).json({ success: false, error: 'Invalid mobile number or password.' });
+      return res.status(401).json({ success: false, error: 'Invalid credentials.' });
     }
 
     await query('UPDATE teachers SET last_login_at = NOW() WHERE id = $1::uuid', [auth.id]);

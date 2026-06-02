@@ -1,0 +1,53 @@
+sricharan_eddy@DESKTOP-JBCBN6G:/mnt/c/Users/Ch.Sricharan Reddy/OneDrive/Pictures/Desktop/movies/mygap/Studentgap$ git pull
+remote: Enumerating objects: 14, done.
+remote: Counting objects: 100% (14/14), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 10 (delta 5), reused 10 (delta 5), pack-reused 0 (from 0)
+Unpacking objects: 100% (10/10), 435.41 KiB | 1.12 MiB/s, done.
+From https://github.com/sricharanreddycheruku/Studentgap
+   3ca254e..a69d11c  main       -> origin/main
+Updating 3ca254e..a69d11c
+Fast-forward
+ attached_assets/image_1779484662251.png | Bin 0 -> 354196 bytes
+ attached_assets/image_1779484681463.png | Bin 0 -> 107180 bytes
+ server/config/db.js                     |  11 +++++++++++
+ 3 files changed, 11 insertions(+)
+ create mode 100644 attached_assets/image_1779484662251.png
+ create mode 100644 attached_assets/image_1779484681463.png
+sricharan_eddy@DESKTOP-JBCBN6G:/mnt/c/Users/Ch.Sricharan Reddy/OneDrive/Pictures/Desktop/movies/mygap/Studentgap$ npm run dev
+
+> classpulse@1.0.0 dev
+> concurrently "npm run server" "npm run client"
+
+[0] 
+[0] > classpulse@1.0.0 server
+[0] > nodemon server/index.js
+[0] 
+[1] 
+[1] > classpulse@1.0.0 client
+[1] > vite --config client/vite.config.mjs
+[1] 
+[1] 
+[1]   VITE v6.4.2  ready in 3995 ms
+[1] 
+[1]   ➜  Local:   http://localhost:5000/
+[1]   ➜  Network: http://10.255.255.254:5000/
+[1]   ➜  Network: http://172.23.172.120:5000/
+[0] [nodemon] 3.1.14
+[0] [nodemon] to restart at any time, enter `rs`
+[0] [nodemon] watching path(s): *.*
+[0] [nodemon] watching extensions: js,mjs,cjs,json
+[0] [nodemon] starting `node server/index.js`
+[0] [database] Connecting to PostgreSQL...
+[0] (node:17898) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+[0] In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+[0] 
+[0] To prepare for this change:
+[0] - If you want the current behavior, explicitly use 'sslmode=verify-full'
+[0] - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+[0] 
+[0] See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+[0] (Use `node --trace-warnings ...` to show where the warning was created)
+[0] [database] PostgreSQL connection failed: column "form_status" does not exist
+[0] [server] Startup failed: column "form_status" does not exist
+[0] [nodemon] app crashed - waiting for file changes before starting...

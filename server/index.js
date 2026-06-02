@@ -16,6 +16,7 @@ const webhookRoutes = require('./routes/webhook');
 const { recoverPendingJobs } = require('./services/assessmentProcessingQueue');
 const { runAutoSeed } = require('./services/autoSeed');
 const { query } = require('./config/db');
+const { getClientPort } = require('./utils/quizQr');
 
 const app = express();
 const port = process.env.API_PORT || 3000;
@@ -41,6 +42,17 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assessments', assessmentsRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/webhook', webhookRoutes);
+
+app.get('/quiz', (req, res, next) => {
+  if (fs.existsSync(path.join(distPath, 'index.html'))) {
+    return next();
+  }
+
+  const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
+  const hostname = String(hostHeader).split(':')[0] || req.hostname || 'localhost';
+  const queryString = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  return res.redirect(302, `http://${hostname}:${getClientPort()}/quiz${queryString}`);
+});
 
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   app.use(express.static(distPath));

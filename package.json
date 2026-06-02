@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "node node_modules/concurrently/dist/bin/concurrently.js \"npm run server\" \"npm run client\"",
-    "server": "node node_modules/nodemon/bin/nodemon.js server/index.js",
+    "server": "node node_modules/nodemon/bin/nodemon.js --ignore dist --ignore ShikshaLens --ignore .classpulse-web-port server/index.js",
     "client": "node node_modules/vite/bin/vite.js --config client/vite.config.mjs",
     "seed": "node server/seed.js",
     "replay:webhook": "node server/scripts/replayGreenApiWebhook.js",

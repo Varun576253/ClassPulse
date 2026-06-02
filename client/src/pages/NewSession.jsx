@@ -82,7 +82,7 @@ const NewSession = () => {
         const addrs = response.data.addresses || [];
         setLocalAddresses(addrs);
         if (addrs.length > 0 && !selectedAddress) {
-          setSelectedAddress(addrs[0].quizUrl.replace('/quiz', ''));
+          setSelectedAddress(addrs[0].baseUrl || addrs[0].quizUrl.replace('/quiz', ''));
         }
       } catch {
         setLocalAddresses([]);
@@ -293,8 +293,8 @@ const NewSession = () => {
                         <input
                           type="radio"
                           name="localAddress"
-                          value={addr.quizUrl.replace('/quiz', '')}
-                          checked={selectedAddress === addr.quizUrl.replace('/quiz', '')}
+                          value={addr.baseUrl || addr.quizUrl.replace('/quiz', '')}
+                          checked={selectedAddress === (addr.baseUrl || addr.quizUrl.replace('/quiz', ''))}
                           onChange={(e) => setSelectedAddress(e.target.value)}
                           className="shrink-0"
                         />
@@ -306,7 +306,7 @@ const NewSession = () => {
                     ))}
                     {selectedAddress && (
                       <p className="mt-1 text-[10px] text-amber-700 break-all">
-                        QR will point to: {selectedAddress}
+                        Student QR will point to: {selectedAddress}/quiz
                       </p>
                     )}
                   </div>

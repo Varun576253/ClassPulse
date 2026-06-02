@@ -2,6 +2,7 @@ const os = require('os');
 const express = require('express');
 const { smsReady } = require('../services/smsService');
 const { getGreenApiInstanceStatus, greenApiReady } = require('../services/whatsappService');
+const { getClientPort, getServerPort } = require('../utils/quizQr');
 
 const router = express.Router();
 
@@ -108,7 +109,8 @@ router.get('/status', async (req, res) => {
 });
 
 router.get('/local-addresses', (req, res) => {
-  const port = Number(process.env.API_PORT || 3000);
+  const apiPort = Number(getServerPort());
+  const appPort = Number(getClientPort());
   const interfaces = os.networkInterfaces();
   const addresses = [];
 
@@ -118,13 +120,14 @@ router.get('/local-addresses', (req, res) => {
         addresses.push({
           name,
           address: iface.address,
-          quizUrl: `http://${iface.address}:${port}`
+          quizUrl: `http://${iface.address}:${appPort}/quiz`,
+          baseUrl: `http://${iface.address}:${appPort}`
         });
       }
     });
   });
 
-  return res.json({ success: true, addresses, port });
+  return res.json({ success: true, addresses, appPort, apiPort });
 });
 
 module.exports = router;

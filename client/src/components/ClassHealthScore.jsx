@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, ArrowUpRight, CheckCircle, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpRight, BookOpen, CheckCircle, TrendingUp } from 'lucide-react';
 
 const getScoreConfig = (score) => {
   if (score >= 80) return { label: 'Excellent', color: 'text-emerald-600', ring: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: CheckCircle };
@@ -11,12 +11,45 @@ const RADIUS = 54;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const ClassHealthScore = ({
-  score = 0,
+  score = null,
   studentsNeedingSupport = 0,
   mostCommonWeakTopic = null,
   averageUnderstanding = 0,
-  improvementRate = 0
+  improvementRate = 0,
+  totalStudents = 0,
+  totalSessions = 0
 }) => {
+  const hasData = score !== null && totalStudents > 0;
+
+  if (!hasData) {
+    return (
+      <section className="panel rounded-xl border border-slate-200 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Class Health Score</p>
+            <h2 className="mt-1 text-lg font-black text-[#11233f]">Not enough data yet</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {totalStudents === 0
+                ? 'Add students to your roster to begin.'
+                : 'Run your first diagnostic session to see class health.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="relative flex h-32 w-32 items-center justify-center shrink-0">
+              <svg className="absolute inset-0 -rotate-90" width="128" height="128" viewBox="0 0 128 128">
+                <circle cx="64" cy="64" r={RADIUS} fill="none" stroke="#e2e8f0" strokeWidth="10" />
+              </svg>
+              <div className="text-center">
+                <BookOpen size={28} className="mx-auto text-slate-300" />
+                <p className="mt-1 text-[10px] font-black uppercase text-slate-400">No data</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const config = getScoreConfig(score);
   const Icon = config.icon;
   const dashOffset = CIRCUMFERENCE - (score / 100) * CIRCUMFERENCE;

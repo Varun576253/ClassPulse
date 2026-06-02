@@ -67,7 +67,7 @@ const calculateClassHealthScore = async (teacherId) => {
     Student.find({ teacherId }).lean(),
     Session.find({ teacherId }).lean()
   ]);
-  if (!students.length) return 50;
+  if (!students.length) return null;
 
   const avgUnderstanding = calculateAverageUnderstanding(sessions);
   const masteryScore = Math.round((avgUnderstanding / 100) * 40);

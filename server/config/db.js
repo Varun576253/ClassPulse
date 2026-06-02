@@ -246,6 +246,7 @@ CREATE TABLE IF NOT EXISTS ai_feedback_logs (
 const migrations = `
 ALTER TABLE teachers ADD COLUMN IF NOT EXISTS password_hash TEXT;
 ALTER TABLE teachers ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS risk_level TEXT NOT NULL DEFAULT 'low';
 ALTER TABLE students ADD COLUMN IF NOT EXISTS confidence_level TEXT NOT NULL DEFAULT 'medium';
 ALTER TABLE students ADD COLUMN IF NOT EXISTS learning_profile JSONB NOT NULL DEFAULT '{"strongTopics":[],"weakTopics":[],"recurringMistakes":[]}'::jsonb;

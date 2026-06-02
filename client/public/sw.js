@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shikshalens-v2';
+const CACHE_NAME = 'shikshalens-v3';
 const STATIC_SHELL = [
   '/',
   '/index.html',
@@ -50,6 +50,13 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return res;
+      }).catch(async () => {
+        if (cached) return cached;
+        if (event.request.mode === 'navigate') {
+          const shell = await caches.match('/index.html') || await caches.match('/');
+          if (shell) return shell;
+        }
+        return new Response('Offline', { status: 503, statusText: 'Offline' });
       });
       return cached || networkFetch;
     })

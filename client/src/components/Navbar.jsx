@@ -27,6 +27,7 @@ import {
   onNotificationsChange,
   readNotifications
 } from '../utils/notifications';
+import { clearTeacherSession, getTeacherId, getTeacherProfile } from '../utils/authSession';
 
 const navigation = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -35,14 +36,6 @@ const navigation = [
   { to: '/roster', label: 'Student Roster', icon: UsersRound },
   { to: '/sessions/new', label: 'New Session', icon: PlusCircle }
 ];
-
-const getTeacherProfile = () => {
-  try {
-    return JSON.parse(localStorage.getItem('classpulse-teacher-profile') || '{}');
-  } catch {
-    return {};
-  }
-};
 
 const initials = (name = 'Teacher') => name
   .split(/\s+/)
@@ -120,8 +113,7 @@ const SidebarContent = ({ collapsed, onToggle, onNavigate, showClose }) => {
   const navigate = useNavigate();
 
   const signOut = () => {
-    localStorage.removeItem('classpulse-teacher');
-    localStorage.removeItem('classpulse-teacher-profile');
+    clearTeacherSession();
     navigate('/login');
   };
 
@@ -284,7 +276,7 @@ const SearchBox = ({ compact = false }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const teacherId = localStorage.getItem('classpulse-teacher') || '';
+    const teacherId = getTeacherId();
     if (!open || loaded || !teacherId) return undefined;
 
     let cancelled = false;

@@ -1,8 +1,9 @@
 import { ArrowRight, BarChart3, BookOpen, KeyRound, Loader2, LockKeyhole, QrCode, UserPlus, Zap } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import { saveTeacherSession } from '../utils/authSession';
 
 const emptyLogin = { credential: '', password: '' };
 const emptyRegister = {
@@ -20,11 +21,6 @@ const LANGUAGES = ['English', 'Hindi', 'Telugu', 'Marathi', 'Tamil'];
 
 const cleanPhone = (value = '') => value.replace(/[^0-9+]/g, '');
 
-const saveTeacherSession = (teacher) => {
-  localStorage.setItem('classpulse-teacher', teacher._id);
-  localStorage.setItem('classpulse-teacher-profile', JSON.stringify(teacher));
-};
-
 const AuthInput = ({ icon: Icon, label, ...props }) => (
   <div className="grid gap-1.5">
     <label className="text-sm font-bold text-slate-500">{label}</label>
@@ -37,6 +33,7 @@ const AuthInput = ({ icon: Icon, label, ...props }) => (
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState('login');
   const [login, setLogin] = useState(emptyLogin);
   const [register, setRegister] = useState(emptyRegister);
@@ -44,7 +41,11 @@ const Login = () => {
   const [resetCodeSent, setResetCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(
+    searchParams.get('expired')
+      ? 'Your saved teacher session no longer exists in this database. Please sign in again.'
+      : ''
+  );
 
   const finishAuth = (teacher) => {
     saveTeacherSession(teacher);

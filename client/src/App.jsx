@@ -13,8 +13,9 @@ import SessionResults from './pages/SessionResults';
 import Settings from './pages/Settings';
 import StudentProgress from './pages/StudentProgress';
 import StudentQuiz from './pages/StudentQuiz';
+import { getTeacherId } from './utils/authSession';
 
-const hasTeacherSession = () => Boolean(localStorage.getItem('classpulse-teacher'));
+const hasTeacherSession = () => Boolean(getTeacherId());
 
 const RequireTeacher = ({ children }) => (
   hasTeacherSession() ? children : <Navigate to="/login" replace />
